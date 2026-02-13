@@ -22,15 +22,16 @@ public class Installer extends ModuleInstall implements Runnable {
 
     public static final Logger log = Logger.getLogger("Installer");
     private static Timer timer;
+    private static RCPSchedule rcpSchedule;
 
     public Installer() {
         super();
         
         timer = new Timer();
         
-        RCPSchedule timetask = new RCPSchedule();
+        rcpSchedule = new RCPSchedule();
         
-        timer.scheduleAtFixedRate(timetask, new Date(), 12000l); // 10s timeout
+        timer.scheduleAtFixedRate(rcpSchedule, new Date(), 12000l); // 12s timeout
         
         System.out.println("[PluginRPC] NetbeansRPC has loaded.");
     }
@@ -42,6 +43,13 @@ public class Installer extends ModuleInstall implements Runnable {
 
     @Override
     public void close() {
+        if (timer != null) {
+            timer.cancel();
+            timer = null;
+        }
+        if (rcpSchedule != null) {
+            rcpSchedule.shutdown();
+        }
         System.out.println("[PluginRPC] NetbeansRPC is closed.");
     }
 }

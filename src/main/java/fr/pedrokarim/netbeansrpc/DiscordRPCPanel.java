@@ -47,6 +47,8 @@ import org.openide.util.NbBundle.Messages;
 })
 public final class DiscordRPCPanel extends TopComponent {
 
+    private static final String CURRENT_STATUS_MARKER = "Current Status:";
+    
     private JTextField appIdField;
     private JCheckBox enabledCheckBox;
     private JCheckBox showProjectCheckBox;
@@ -202,16 +204,16 @@ public final class DiscordRPCPanel extends TopComponent {
 
     public void updatePresenceInfo(String project, String file, String language) {
         StringBuilder info = new StringBuilder();
-        info.append("Current Status:\n");
+        info.append(CURRENT_STATUS_MARKER).append("\n");
         info.append("  Project: ").append(project != null ? project : "N/A").append("\n");
         info.append("  File: ").append(file != null ? file : "N/A").append("\n");
         info.append("  Language: ").append(language != null ? language : "N/A").append("\n");
         
         if (statusArea != null) {
             String currentText = statusArea.getText();
-            if (currentText.contains("Current Status:")) {
+            if (currentText.contains(CURRENT_STATUS_MARKER)) {
                 // Replace the last status update
-                int lastIndex = currentText.lastIndexOf("Current Status:");
+                int lastIndex = currentText.lastIndexOf(CURRENT_STATUS_MARKER);
                 if (lastIndex > 0) {
                     currentText = currentText.substring(0, lastIndex);
                 }
@@ -221,9 +223,10 @@ public final class DiscordRPCPanel extends TopComponent {
     }
 
     public static DiscordRPCPanel getInstance() {
-        return (DiscordRPCPanel) TopComponent.getRegistry().getOpened()
+        return TopComponent.getRegistry().getOpened()
                 .stream()
-                .filter(tc -> tc instanceof DiscordRPCPanel)
+                .filter(DiscordRPCPanel.class::isInstance)
+                .map(DiscordRPCPanel.class::cast)
                 .findFirst()
                 .orElse(null);
     }

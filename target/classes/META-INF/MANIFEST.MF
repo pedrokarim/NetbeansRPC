@@ -7,7 +7,7 @@ OpenIDE-Module-Display-Category: RPC
 Built-By: PedroKarim64
 OpenIDE-Module-Specification-Version: 2.0
 OpenIDE-Module-Implementation-Version: 2.0
-OpenIDE-Module-Build-Version: 202602131920
+OpenIDE-Module-Build-Version: 202602131922
 OpenIDE-Module: fr.pedrokarim.NetbeansRPC
 OpenIDE-Module-Public-Packages: fr.pedrokarim.netbeansrpc.*
 OpenIDE-Module-Requires: org.openide.modules.ModuleFormat1

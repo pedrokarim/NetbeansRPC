@@ -5,14 +5,21 @@
  */
 package fr.pedrokarim.netbeansrpc;
 
-import club.minnced.discord.rpc.DiscordEventHandlers;
-import club.minnced.discord.rpc.DiscordRPC;
-import club.minnced.discord.rpc.DiscordRichPresence;
-import com.sun.jna.Native;
-import com.sun.jna.platform.win32.User32;
-import com.sun.jna.platform.win32.WinDef;
+import io.github.kawaxte.presence.DiscordEventHandlers;
+import io.github.kawaxte.presence.DiscordRPC;
+import io.github.kawaxte.presence.DiscordRichPresence;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.util.TimerTask;
+import javax.swing.text.Document;
+import org.netbeans.api.project.FileOwnerQuery;
+import org.netbeans.api.project.Project;
+import org.netbeans.api.project.ProjectUtils;
+import org.openide.cookies.EditorCookie;
+import org.openide.filesystems.FileObject;
+import org.openide.loaders.DataObject;
 import org.openide.util.Exceptions;
+import org.openide.windows.TopComponent;
 
 /**
  *
@@ -20,105 +27,196 @@ import org.openide.util.Exceptions;
  */
 public class RCPSchedule extends TimerTask {
 
-    private static final int MAX_TITLE_LENGTH = 1024;
-    public static String currentWindows = "";
-    
     private DiscordRichPresence presence;
-    private DiscordRPC lib;
+    private PropertyChangeListener registryListener;
+    private String applicationId = "621768079386345477";
+    private Thread callbackThread;
+    private volatile boolean running = true;
 
     public RCPSchedule() {
         try {
-            this.currentWindows = windowsTitleCurrency();
-            
-            createPresence(new String[]{"621768079386345477"});
+            initializeDiscordRPC();
+            setupListener();
         } catch (Exception ex) {
             Exceptions.printStackTrace(ex);
         }
     }
 
-    
-    
+    private void setupListener() {
+        // Listen for changes in the active TopComponent
+        registryListener = new PropertyChangeListener() {
+            @Override
+            public void propertyChange(PropertyChangeEvent evt) {
+                if (TopComponent.Registry.PROP_ACTIVATED.equals(evt.getPropertyName())) {
+                    updateRCP(false);
+                }
+            }
+        };
+        TopComponent.getRegistry().addPropertyChangeListener(registryListener);
+    }
+
     @Override
     public void run() {
         try {
-            this.currentWindows = windowsTitleCurrency();
             updateRCP(false);
         } catch (Exception ex) {
             Exceptions.printStackTrace(ex);
         }
     }
-    
-    public String windowsTitleCurrency() throws Exception {
-        char[] buffer = new char[MAX_TITLE_LENGTH * 2];
-        WinDef.HWND hwnd = User32.INSTANCE.GetForegroundWindow();
-        User32.INSTANCE.GetWindowText(hwnd, buffer, MAX_TITLE_LENGTH);
-        
-        WinDef.RECT rect = new WinDef.RECT();
-        User32.INSTANCE.GetWindowRect(hwnd, rect);
-        System.out.println("rect = " + rect);
-        
-        return Native.toString(buffer);
-    }
 
-    
-    public void createPresence(String[] args) {
-
-        if (args.length == 0) {
-            System.err.println("You must specify an application ID in the arguments!");
-            System.exit(-1);
-        }
-        lib = DiscordRPC.INSTANCE;
-        presence = new DiscordRichPresence();
-        String applicationId = args.length < 1 ? "" : args[0];
-        String steamId = args.length < 2 ? "" : args[1];
-
-        DiscordEventHandlers handlers = new DiscordEventHandlers();
-        handlers.ready = (user) -> System.out.println("Ready!");
-        
-        lib.Discord_Initialize(applicationId, handlers, true, steamId);
-
-        updateRCP(true);
-    }
-    
-    private void updateRCP(Boolean timestamp){
-        
-        DiscordRichPresence p = this.presence;
-
-        if(timestamp != null && timestamp){
-            p.startTimestamp = System.currentTimeMillis() / 1000; // epoch second
-        }
-        // presence.endTimestamp   = presence.startTimestamp + 20;
-        
-        String[] title = currentWindows.split("-");
-
-        if(title.length == 2 && title[1].contains("NetBeans")){
-            p.details = title[1] != null ? title[1].trim() : "Netbeans en cous...";
-            p.state = title[0] != null ? title[0].trim() : "none";
-        }else{
-            p.details = currentWindows.contains("NetBeans") ? currentWindows.trim() : "Netbeans en cous...";
-            p.state = "none";
-        }
-        
-        p.largeImageKey = "first";
-        p.largeImageText = "Netbeans EDI";
-        p.smallImageKey = "java";
-        p.smallImageText = "programming in java";
-        // presence.partySize = 1;
-        // presence.partyMax  = 4;
-        lib.Discord_UpdatePresence(p);
-
-        final Thread t = new Thread(() -> {
-            while (!Thread.currentThread().isInterrupted()) {
-                lib.Discord_RunCallbacks();
-                try {
-                    Thread.sleep(500);
-                } catch (InterruptedException e) {
-                    lib.Discord_Shutdown();
-                    break;
+    private FileObject getCurrentFileObject() {
+        try {
+            TopComponent activated = TopComponent.getRegistry().getActivated();
+            if (activated != null) {
+                EditorCookie ec = activated.getLookup().lookup(EditorCookie.class);
+                if (ec != null && ec.getDocument() != null) {
+                    Document doc = ec.getDocument();
+                    Object streamDesc = doc.getProperty(Document.StreamDescriptionProperty);
+                    if (streamDesc instanceof DataObject) {
+                        DataObject dataObject = (DataObject) streamDesc;
+                        return dataObject.getPrimaryFile();
+                    }
                 }
             }
-        }, "RPC-Callback-Handler");
-        t.start();
+        } catch (Exception e) {
+            // Silently handle errors in file detection
+        }
+        return null;
+    }
+
+    private String detectCurrentFile() {
+        FileObject file = getCurrentFileObject();
+        return file != null ? file.getNameExt() : null;
+    }
+
+    private String detectCurrentProject() {
+        FileObject file = getCurrentFileObject();
+        if (file != null) {
+            try {
+                Project project = FileOwnerQuery.getOwner(file);
+                if (project != null) {
+                    return ProjectUtils.getInformation(project).getDisplayName();
+                }
+            } catch (Exception e) {
+                // Silently handle errors in project detection
+            }
+        }
+        return null;
+    }
+
+    private String detectFileType() {
+        FileObject file = getCurrentFileObject();
+        if (file != null) {
+            try {
+                String mimeType = file.getMIMEType();
+                
+                // Map MIME types to readable language names
+                if (mimeType.contains("java")) return "Java";
+                if (mimeType.contains("xml")) return "XML";
+                if (mimeType.contains("html")) return "HTML";
+                if (mimeType.contains("javascript")) return "JavaScript";
+                if (mimeType.contains("css")) return "CSS";
+                if (mimeType.contains("python")) return "Python";
+                if (mimeType.contains("json")) return "JSON";
+                if (mimeType.contains("properties")) return "Properties";
+                
+                // Fallback to extension
+                String ext = file.getExt().toUpperCase();
+                if (!ext.isEmpty()) return ext;
+            } catch (Exception e) {
+                // Silently handle errors in file type detection
+            }
+        }
+        return null;
+    }
+
+    public void initializeDiscordRPC() {
+        try {
+            DiscordEventHandlers handlers = new DiscordEventHandlers();
+            handlers.ready = (user) -> System.out.println("Discord RPC Ready!");
+            
+            DiscordRPC.initialise(applicationId, handlers, true, "");
+            
+            // Start callback thread
+            callbackThread = new Thread(() -> {
+                while (running && !Thread.currentThread().isInterrupted()) {
+                    DiscordRPC.runCallbacks();
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException e) {
+                        break;
+                    }
+                }
+            }, "RPC-Callback-Handler");
+            callbackThread.start();
+            
+            System.out.println("Discord RPC initialized!");
+            updateRCP(true);
+        } catch (Exception e) {
+            System.err.println("Failed to initialize Discord RPC: " + e.getMessage());
+            Exceptions.printStackTrace(e);
+        }
+    }
+    
+    private void updateRCP(Boolean timestamp) {
+        try {
+            DiscordRichPresence.Builder builder = new DiscordRichPresence.Builder();
+            
+            if (timestamp != null && timestamp) {
+                builder.setStartTimestamp(System.currentTimeMillis() / 1000);
+            }
+            
+            // Detect via NetBeans APIs
+            String fileName = detectCurrentFile();
+            String projectName = detectCurrentProject();
+            String fileType = detectFileType();
+            
+            // Set presence details
+            if (projectName != null) {
+                builder.setDetails("📁 " + projectName);
+            } else {
+                builder.setDetails("Working in NetBeans IDE");
+            }
+            
+            if (fileName != null) {
+                builder.setState("📝 Editing " + fileName);
+            } else {
+                builder.setState("Idle");
+            }
+            
+            builder.setLargeImageKey("netbeans");
+            builder.setLargeImageText("NetBeans IDE");
+            
+            if (fileType != null) {
+                builder.setSmallImageKey("java"); // Note: Ensure assets are configured in Discord Developer Portal
+                builder.setSmallImageText("Programming in " + fileType);
+            } else {
+                builder.setSmallImageKey("java");
+                builder.setSmallImageText("NetBeans");
+            }
+            
+            presence = builder.build();
+            
+            // CRUCIAL: Send to Discord!
+            DiscordRPC.updatePresence(presence);
+        } catch (Exception e) {
+            System.err.println("Failed to update Discord presence: " + e.getMessage());
+        }
+    }
+
+    public void shutdown() {
+        running = false;
+        if (registryListener != null) {
+            TopComponent.getRegistry().removePropertyChangeListener(registryListener);
+        }
+        if (callbackThread != null) {
+            callbackThread.interrupt();
+        }
+        try {
+            DiscordRPC.shutdown();
+        } catch (Exception e) {
+            System.err.println("Error during Discord RPC shutdown: " + e.getMessage());
+        }
     }
     
 }

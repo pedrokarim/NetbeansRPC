@@ -64,24 +64,18 @@
     </build>
     <repositories>
         <repository>
-            <id>netbeans</id>
-            <name>Repository hosting NetBeans modules</name>
-            <url>http://bits.netbeans.org/nexus/content/groups/netbeans</url>
+            <id>apache-snapshots</id>
+            <url>https://repository.apache.org/content/repositories/snapshots/</url>
             <snapshots>
-                <enabled>false</enabled>
+                <enabled>true</enabled>
             </snapshots>
-        </repository>
-        <repository>
-            <id>jcenter</id>
-            <url>https://jcenter.bintray.com</url>
-            <name>jcenter-bintray</name>
         </repository>
     </repositories>
     <dependencies>
         <dependency>
             <groupId>org.netbeans.api</groupId>
             <artifactId>org-netbeans-api-annotations-common</artifactId>
-            <version>RELEASE82</version>
+            <version>RELEASE110</version>
         </dependency>
         <dependency>
             <groupId>org.netbeans.api</groupId>
@@ -94,14 +88,9 @@
             <version>RELEASE110</version>
         </dependency>
         <dependency>
-            <groupId>club.minnced</groupId>
-            <artifactId>discord-rpc-release</artifactId>
-            <version>v3.3.0</version>
-        </dependency>
-        <dependency>
-            <groupId>club.minnced</groupId>
-            <artifactId>java-discord-rpc</artifactId>
-            <version>2.0.1</version>
+            <groupId>io.github.kawaxte</groupId>
+            <artifactId>discord-rpc</artifactId>
+            <version>20230409</version>
         </dependency>
         <dependency>
             <groupId>com.google.code.findbugs</groupId>
@@ -116,12 +105,12 @@
         <dependency>
             <groupId>net.java.dev.jna</groupId>
             <artifactId>jna</artifactId>
-            <version>5.4.0</version>
+            <version>5.13.0</version>
         </dependency>
         <dependency>
             <groupId>net.java.dev.jna</groupId>
             <artifactId>jna-platform</artifactId>
-            <version>5.4.0</version>
+            <version>5.13.0</version>
         </dependency>
         <dependency>
             <groupId>org.netbeans.api</groupId>
@@ -151,9 +140,19 @@
             <version>RELEASE110</version>
         </dependency>
         <dependency>
-            <groupId>org.netbeans.modules</groupId>
-            <artifactId>org-netbeans-modules-hudson-mercurial</artifactId>
-            <version>RELEASE112</version>
+            <groupId>org.netbeans.api</groupId>
+            <artifactId>org-openide-text</artifactId>
+            <version>RELEASE110</version>
+        </dependency>
+        <dependency>
+            <groupId>org.netbeans.api</groupId>
+            <artifactId>org-openide-loaders</artifactId>
+            <version>RELEASE110</version>
+        </dependency>
+        <dependency>
+            <groupId>org.netbeans.api</groupId>
+            <artifactId>org-openide-nodes</artifactId>
+            <version>RELEASE110</version>
         </dependency>
     </dependencies>
     <properties>

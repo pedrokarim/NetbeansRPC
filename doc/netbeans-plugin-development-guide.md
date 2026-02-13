@@ -30,8 +30,8 @@ Un plugin NetBeans (aussi appelé **module**) est une extension qui ajoute des f
 
 Avant de commencer, assurez-vous d'avoir :
 
-- **NetBeans IDE** 11.0 ou supérieur
-- **JDK** 8 ou supérieur (JDK 11+ recommandé)
+- **NetBeans IDE** 23.0 ou supérieur (Apache NetBeans)
+- **JDK** 17 ou supérieur (JDK 23+ supporté avec `<proc>full</proc>`)
 - **Apache Maven** 3.6 ou supérieur
 - Connaissance basique de Java
 - Compréhension de Maven (optionnel mais recommandé)
@@ -87,27 +87,30 @@ Ou créer manuellement un `pom.xml` :
     
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <netbeans.version>RELEASE120</netbeans.version>
+        <netbeans.version>RELEASE230</netbeans.version>
     </properties>
-    
+
     <build>
         <plugins>
             <!-- Plugin Maven pour NBM -->
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
+                <groupId>org.apache.netbeans.utilities</groupId>
                 <artifactId>nbm-maven-plugin</artifactId>
-                <version>4.7</version>
+                <version>4.8</version>
                 <extensions>true</extensions>
             </plugin>
-            
+
             <!-- Compilation Java -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.11.0</version>
+                <version>3.13.0</version>
                 <configuration>
-                    <source>11</source>
-                    <target>11</target>
+                    <source>17</source>
+                    <target>17</target>
+                    <release>17</release>
+                    <!-- Requis pour JDK 23+ (JEP 477) -->
+                    <proc>full</proc>
                 </configuration>
             </plugin>
         </plugins>
@@ -703,15 +706,17 @@ Créez un fichier `updates.xml` :
 
 ### Ajouter des Bibliothèques Externes
 
-Pour inclure des bibliothèques tierces (comme discord-rpc dans NetbeansRPC) :
+Pour inclure des bibliothèques tierces :
 
 ```xml
 <dependency>
-    <groupId>io.github.kawaxte</groupId>
-    <artifactId>discord-rpc</artifactId>
-    <version>20230409</version>
+    <groupId>com.example</groupId>
+    <artifactId>ma-bibliotheque</artifactId>
+    <version>1.0</version>
 </dependency>
 ```
+
+> **Note** : Les bibliothèques natives (JNA, DLL) peuvent causer des problèmes avec les classloaders isolés de NetBeans. `ClassLoader.getSystemResource()` retourne `null` dans un module NetBeans. Préférez les implémentations en pur Java quand c'est possible. Par exemple, NetbeansRPC v2.0 a remplacé une bibliothèque native Discord par une implémentation pure Java utilisant les named pipes.
 
 ## Debugging
 

@@ -1,9 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?><module codename="fr.pedrokarim.NetbeansRPC">
-    <module_version install_time="1771010550912" last="true" origin="installer" specification_version="2.0">
-        <file crc="3784016116" name="config/Modules/fr-pedrokarim-NetbeansRPC.xml"/>
-        <file crc="541077999" name="modules/ext/fr.pedrokarim.NetbeansRPC/com-google-code-findbugs/jsr305.jar"/>
-        <file crc="2820037984" name="modules/ext/fr.pedrokarim.NetbeansRPC/io-github-kawaxte/discord-rpc.jar"/>
-        <file crc="4264884457" name="modules/ext/fr.pedrokarim.NetbeansRPC/net-java-dev-jna/jna.jar"/>
-        <file crc="4251763501" name="modules/fr-pedrokarim-NetbeansRPC.jar"/>
+    <module_version install_time="1771017692696" last="true" origin="installer" specification_version="2.0">
+        <file crc="1250417102" name="config/Modules/fr-pedrokarim-NetbeansRPC.xml"/>
+        <file crc="406575332" name="modules/fr-pedrokarim-NetbeansRPC.jar"/>
     </module_version>
 </module>

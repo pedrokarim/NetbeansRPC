@@ -18,23 +18,25 @@ public class Installer extends ModuleInstall implements Runnable {
     public static final Logger log = Logger.getLogger("Installer");
     private static Timer timer;
     private static RCPSchedule rcpSchedule;
+    private static Thread shutdownHook;
 
     public Installer() {
         super();
-        
-        // Only start if enabled in settings
-        if (DiscordRPCSettings.isEnabled()) {
-            startRPC();
-        }
-        
-        System.out.println("[PluginRPC] NetbeansRPC has loaded.");
     }
-    
+
     private static synchronized void startRPC() {
         if (timer == null) {
             timer = new Timer();
             rcpSchedule = new RCPSchedule();
-            timer.scheduleAtFixedRate(rcpSchedule, new Date(), 12000l); // Updates every 12 seconds
+            timer.scheduleAtFixedRate(rcpSchedule, new Date(), 12000l);
+
+            // Shutdown hook ensures Discord presence is cleared even if close() isn't called
+            shutdownHook = new Thread(() -> {
+                System.out.println("[PluginRPC] JVM shutdown hook triggered.");
+                stopRPC();
+            }, "PluginRPC-Shutdown");
+            Runtime.getRuntime().addShutdownHook(shutdownHook);
+
             System.out.println("[PluginRPC] Discord RPC started.");
         }
     }
@@ -63,7 +65,10 @@ public class Installer extends ModuleInstall implements Runnable {
 
     @Override
     public void run() {
-        
+        if (DiscordRPCSettings.isEnabled()) {
+            startRPC();
+        }
+        System.out.println("[PluginRPC] NetbeansRPC has loaded.");
     }
 
     @Override

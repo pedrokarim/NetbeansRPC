@@ -1,8 +1,5 @@
 package fr.pedrokarim.netbeansrpc;
 
-import io.github.kawaxte.presence.DiscordEventHandlers;
-import io.github.kawaxte.presence.DiscordRPC;
-import io.github.kawaxte.presence.DiscordRichPresence;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.TimerTask;
@@ -22,12 +19,11 @@ import org.openide.windows.TopComponent;
  */
 public class RCPSchedule extends TimerTask {
 
-    private DiscordRichPresence presence;
+    private DiscordIPCClient ipcClient;
     private PropertyChangeListener registryListener;
     private String currentProject;
     private String currentFile;
     private String currentFileType;
-    private Thread callbackThread;
     private volatile boolean running = true;
     private long startTimestamp = 0;
 
@@ -41,7 +37,6 @@ public class RCPSchedule extends TimerTask {
     }
 
     private void setupListener() {
-        // Listen for changes in the active TopComponent
         registryListener = new PropertyChangeListener() {
             @Override
             public void propertyChange(PropertyChangeEvent evt) {
@@ -56,6 +51,15 @@ public class RCPSchedule extends TimerTask {
     @Override
     public void run() {
         try {
+            // Reconnect if disconnected
+            if (ipcClient != null && !ipcClient.isConnected()) {
+                System.out.println("[PluginRPC] Attempting to reconnect...");
+                ipcClient.close();
+                ipcClient = new DiscordIPCClient(DiscordRPCSettings.getApplicationId());
+                if (ipcClient.connect()) {
+                    updateUIStatus("Reconnected to Discord");
+                }
+            }
             updateRCP(false);
         } catch (Exception ex) {
             Exceptions.printStackTrace(ex);
@@ -107,8 +111,7 @@ public class RCPSchedule extends TimerTask {
         if (file != null) {
             try {
                 String mimeType = file.getMIMEType();
-                
-                // Map MIME types to readable language names
+
                 if (mimeType.contains("java")) return "Java";
                 if (mimeType.contains("xml")) return "XML";
                 if (mimeType.contains("html")) return "HTML";
@@ -124,8 +127,7 @@ public class RCPSchedule extends TimerTask {
                 if (mimeType.contains("markdown")) return "Markdown";
                 if (mimeType.contains("yaml")) return "YAML";
                 if (mimeType.contains("sql")) return "SQL";
-                
-                // Fallback to extension
+
                 String ext = file.getExt().toUpperCase();
                 if (!ext.isEmpty()) return ext;
             } catch (Exception e) {
@@ -138,106 +140,77 @@ public class RCPSchedule extends TimerTask {
     public void initializeDiscordRPC() {
         try {
             String applicationId = DiscordRPCSettings.getApplicationId();
-            
-            DiscordEventHandlers handlers = new DiscordEventHandlers();
-            handlers.ready = (user) -> {
-                System.out.println("Discord RPC Ready! Connected as: " + user.username);
-                updateUIStatus("Connected to Discord as " + user.username);
-            };
-            
-            handlers.disconnected = (errorCode, message) -> {
-                System.err.println("Discord RPC Disconnected: " + message);
-                updateUIStatus("Disconnected from Discord: " + message);
-            };
-            
-            handlers.errored = (errorCode, message) -> {
-                System.err.println("Discord RPC Error: " + message);
-                updateUIStatus("Error: " + message);
-            };
-            
-            DiscordRPC.initialise(applicationId, handlers, true, "");
-            
-            // Start callback thread
-            callbackThread = new Thread(() -> {
-                while (running && !Thread.currentThread().isInterrupted()) {
-                    DiscordRPC.runCallbacks();
-                    try {
-                        Thread.sleep(500);
-                    } catch (InterruptedException e) {
-                        break;
-                    }
-                }
-            }, "RPC-Callback-Handler");
-            callbackThread.setDaemon(true);
-            callbackThread.start();
-            
-            System.out.println("Discord RPC initialized with Application ID: " + applicationId);
-            updateRCP(true);
+
+            ipcClient = new DiscordIPCClient(applicationId);
+            if (ipcClient.connect()) {
+                updateUIStatus("Connected to Discord");
+                startTimestamp = System.currentTimeMillis() / 1000;
+                System.out.println("[PluginRPC] Discord IPC initialized with Application ID: " + applicationId);
+                updateRCP(true);
+            } else {
+                updateUIStatus("Could not connect to Discord. Is Discord running?");
+            }
         } catch (Exception e) {
-            System.err.println("Failed to initialize Discord RPC: " + e.getMessage());
+            System.err.println("[PluginRPC] Failed to initialize Discord IPC: " + e.getMessage());
             updateUIStatus("Failed to initialize: " + e.getMessage());
             Exceptions.printStackTrace(e);
         }
     }
-    
+
     private void updateRCP(Boolean timestamp) {
+        if (ipcClient == null || !ipcClient.isConnected()) {
+            return;
+        }
+
         try {
-            DiscordRichPresence.Builder builder = new DiscordRichPresence.Builder();
-            
             if (timestamp != null && timestamp) {
                 startTimestamp = System.currentTimeMillis() / 1000;
             }
-            
-            if (DiscordRPCSettings.isShowTimestamp() && startTimestamp > 0) {
-                builder.setStartTimestamp(startTimestamp);
-            }
-            
-            // Detect via NetBeans APIs
+
             String fileName = detectCurrentFile();
             String projectName = detectCurrentProject();
             String fileType = detectFileType();
-            
-            // Store for UI updates
+
             currentProject = projectName;
             currentFile = fileName;
             currentFileType = fileType;
-            
-            // Set presence details based on settings
+
+            String details;
             if (DiscordRPCSettings.isShowProject() && projectName != null) {
-                builder.setDetails("📁 " + projectName);
+                details = projectName;
             } else {
-                builder.setDetails("Working in NetBeans IDE");
+                details = "Working in NetBeans IDE";
             }
-            
+
+            String state;
             if (DiscordRPCSettings.isShowFile() && fileName != null) {
-                builder.setState("📝 Editing " + fileName);
+                state = "Editing " + fileName;
             } else {
-                builder.setState("Idle");
+                state = "Idle";
             }
-            
-            builder.setLargeImageKey("netbeans");
-            builder.setLargeImageText("NetBeans IDE");
-            
+
+            String smallImageKey = null;
+            String smallImageText = null;
             if (fileType != null) {
-                builder.setSmallImageKey("java"); // Note: Ensure assets are configured in Discord Developer Portal
-                builder.setSmallImageText("Programming in " + fileType);
-            } else {
-                builder.setSmallImageKey("java");
-                builder.setSmallImageText("NetBeans");
+                smallImageKey = getAssetKeyForFileType(fileType);
+                smallImageText = "Programming in " + fileType;
             }
-            
-            presence = builder.build();
-            
-            // Send to Discord!
-            DiscordRPC.updatePresence(presence);
-            
-            // Update UI panel if open
+
+            long ts = DiscordRPCSettings.isShowTimestamp() ? startTimestamp : 0;
+
+            ipcClient.updatePresence(
+                    details, state,
+                    "first", "NetBeans IDE",
+                    smallImageKey, smallImageText,
+                    ts
+            );
+
             updateUIPresence();
         } catch (Exception e) {
-            System.err.println("Failed to update Discord presence: " + e.getMessage());
+            System.err.println("[PluginRPC] Failed to update Discord presence: " + e.getMessage());
         }
     }
-    
+
     private void updateUIStatus(String message) {
         try {
             DiscordRPCPanel panel = DiscordRPCPanel.getInstance();
@@ -248,7 +221,7 @@ public class RCPSchedule extends TimerTask {
             // Ignore if UI is not available
         }
     }
-    
+
     private void updateUIPresence() {
         try {
             DiscordRPCPanel panel = DiscordRPCPanel.getInstance();
@@ -260,20 +233,30 @@ public class RCPSchedule extends TimerTask {
         }
     }
 
+    private String getAssetKeyForFileType(String fileType) {
+        switch (fileType) {
+            case "Java":
+            case "Properties":
+            case "Kotlin":
+            case "Groovy":
+                return "java";
+            case "XML":
+                return "maven";
+            default:
+                return "java";
+        }
+    }
+
     public void shutdown() {
         running = false;
         if (registryListener != null) {
             TopComponent.getRegistry().removePropertyChangeListener(registryListener);
         }
-        if (callbackThread != null) {
-            callbackThread.interrupt();
+        if (ipcClient != null) {
+            ipcClient.close();
+            ipcClient = null;
         }
-        try {
-            DiscordRPC.shutdown();
-            updateUIStatus("Discord RPC shutdown complete");
-        } catch (Exception e) {
-            System.err.println("Error during Discord RPC shutdown: " + e.getMessage());
-        }
+        updateUIStatus("Discord RPC shutdown complete");
+        System.out.println("[PluginRPC] Discord RPC shutdown complete");
     }
-    
 }

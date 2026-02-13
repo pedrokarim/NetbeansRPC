@@ -69,7 +69,36 @@ Added support for more programming languages:
 And all the previously supported languages:
 - Java, XML, HTML, JavaScript, CSS, Python, JSON, Properties
 
-### 5. Improved Code Architecture
+### 5. Pure Java Discord IPC (NEW!)
+
+The biggest architectural change in 2.0 is the complete replacement of the native `kawaxte/discord-rpc` library with a custom pure Java IPC client.
+
+#### Why?
+
+The previous native library (`discord-rpc`) depended on JNA and a native DLL (`discord-rpc.dll`). This caused `UnsatisfiedLinkError` in NetBeans because the library used `ClassLoader.getSystemResource()` to extract the DLL, which returns `null` in NetBeans' isolated module classloaders.
+
+#### How It Works
+
+The new `DiscordIPCClient.java` communicates directly with Discord via Windows named pipes (`\\.\pipe\discord-ipc-0` to `-9`) using pure Java (`RandomAccessFile`):
+
+- Binary frame protocol: opcode (4B LE) + length (4B LE) + JSON payload
+- Handshake → READY → SET_ACTIVITY commands
+- No native libraries, no JNA, no DLL extraction
+
+#### Benefits
+
+- **Zero external dependencies** - only NetBeans Platform APIs
+- **No classloader issues** - works perfectly in NetBeans' modular environment
+- **Simpler build** - no native library packaging
+- **Auto-reconnect** - automatically reconnects if Discord is restarted
+
+### 6. Improved Code Architecture
+
+**DiscordIPCClient Class (NEW)**
+- Pure Java Discord IPC client
+- Named pipe communication
+- Binary frame protocol implementation
+- Connect, update presence, clear presence, close
 
 **DiscordRPCSettings Class**
 - Centralized configuration management
@@ -79,13 +108,15 @@ And all the previously supported languages:
 **Enhanced Installer**
 - Support for enabling/disabling at startup
 - Restart functionality without IDE restart
+- JVM shutdown hook for reliable cleanup
 - Better lifecycle management
 
 **Updated RCPSchedule**
+- Uses DiscordIPCClient instead of native library
 - Settings-aware presence updates
 - UI integration for status display
-- More robust error handling
-- Better event handlers for Discord connection states
+- Auto-reconnect on Discord restart
+- Dynamic asset key mapping based on file type
 
 ## Migration from 1.x to 2.0
 
@@ -171,11 +202,13 @@ DiscordRPCPanel (UI)
     ↓
 DiscordRPCSettings (Config Storage)
     ↓
-Installer (Lifecycle Management)
+Installer (Lifecycle Management + Shutdown Hook)
     ↓
-RCPSchedule (Discord Communication)
+RCPSchedule (Presence Logic)
     ↓
-Discord API
+DiscordIPCClient (Pure Java IPC)
+    ↓
+Discord Client (via Named Pipe)
 ```
 
 ### Configuration Storage
@@ -192,10 +225,11 @@ The plugin uses:
   - `org.openide.*` - Core platform APIs
   - `org.netbeans.api.project.*` - Project detection
   - `TopComponent` - UI panel integration
-  
-- **Discord RPC Library** (kawaxte/discord-rpc)
-  - Discord IPC communication
-  - Rich Presence updates
+
+- **Discord IPC Protocol** (pure Java, no external library)
+  - Named pipes (`\\.\pipe\discord-ipc-X`)
+  - Binary framed JSON messages
+  - SET_ACTIVITY commands for presence updates
 
 ## Future Enhancements
 
@@ -209,11 +243,17 @@ Potential features for future versions:
 - [ ] Integration with Git branch information
 - [ ] Dark/light theme for the configuration panel
 
+### Reliable Shutdown
+
+The plugin now uses a JVM shutdown hook to guarantee cleanup:
+- Discord presence is always cleared when NetBeans exits
+- IPC connection is properly closed
+- Works even if `ModuleInstall.close()` is not called
+
 ## Credits
 
 - Original plugin by Pedro Karim
-- Updated to NetBeans 23+ and UI enhancements in version 2.0
-- Discord RPC library by [kawaxte](https://github.com/kawaxte/discord-rpc)
+- Updated to NetBeans 23+ with pure Java IPC and UI enhancements in version 2.0
 - NetBeans Platform by Apache NetBeans community
 
 ## Links

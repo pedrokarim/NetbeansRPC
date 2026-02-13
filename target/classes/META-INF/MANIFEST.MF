@@ -7,7 +7,7 @@ OpenIDE-Module-Display-Category: RPC
 Built-By: PedroKarim64
 OpenIDE-Module-Specification-Version: 2.0
 OpenIDE-Module-Implementation-Version: 2.0
-OpenIDE-Module-Build-Version: 202602131922
+OpenIDE-Module-Build-Version: 202602132121
 OpenIDE-Module: fr.pedrokarim.NetbeansRPC
 OpenIDE-Module-Public-Packages: fr.pedrokarim.netbeansrpc.*
 OpenIDE-Module-Requires: org.openide.modules.ModuleFormat1
@@ -18,11 +18,6 @@ OpenIDE-Module-Short-Description: Ce plugin exploite la RichPresence A
 OpenIDE-Module-Long-Description: Ce plugin exploite la RichPresence AP
  I de Discord et permet de partage activité de vos projects avec vos 
  amis.
-X-Class-Path: ext/fr.pedrokarim.NetbeansRPC/io-github-kawaxte/discord-
- rpc.jar ext/fr.pedrokarim.NetbeansRPC/net-java-dev-jna/jna.jar ext/fr
- .pedrokarim.NetbeansRPC/com-google-code-findbugs/jsr305.jar
-Maven-Class-Path: io.github.kawaxte:discord-rpc:20230409 net.java.dev.
- jna:jna:5.13.0 com.google.code.findbugs:jsr305:3.0.2
 OpenIDE-Module-Module-Dependencies: org.netbeans.api.annotations.commo
  n/1 > 1.53, org.openide.windows > 6.102, org.openide.modules > 7.73, 
  org.openide.util > 9.33, org.netbeans.modules.projectapi/1 > 1.96, or

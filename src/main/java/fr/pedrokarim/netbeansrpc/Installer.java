@@ -31,7 +31,7 @@ public class Installer extends ModuleInstall implements Runnable {
         
         rcpSchedule = new RCPSchedule();
         
-        timer.scheduleAtFixedRate(rcpSchedule, new Date(), 12000l); // 12s timeout
+        timer.scheduleAtFixedRate(rcpSchedule, new Date(), 12000l); // Updates every 12 seconds
         
         System.out.println("[PluginRPC] NetbeansRPC has loaded.");
     }

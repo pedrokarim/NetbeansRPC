@@ -64,7 +64,7 @@ public class RCPSchedule extends TimerTask {
         }
     }
 
-    private String detectCurrentFile() {
+    private FileObject getCurrentFileObject() {
         try {
             TopComponent activated = TopComponent.getRegistry().getActivated();
             if (activated != null) {
@@ -74,8 +74,7 @@ public class RCPSchedule extends TimerTask {
                     Object streamDesc = doc.getProperty(Document.StreamDescriptionProperty);
                     if (streamDesc instanceof DataObject) {
                         DataObject dataObject = (DataObject) streamDesc;
-                        FileObject file = dataObject.getPrimaryFile();
-                        return file.getNameExt();
+                        return dataObject.getPrimaryFile();
                     }
                 }
             }
@@ -85,61 +84,48 @@ public class RCPSchedule extends TimerTask {
         return null;
     }
 
+    private String detectCurrentFile() {
+        FileObject file = getCurrentFileObject();
+        return file != null ? file.getNameExt() : null;
+    }
+
     private String detectCurrentProject() {
-        try {
-            TopComponent activated = TopComponent.getRegistry().getActivated();
-            if (activated != null) {
-                EditorCookie ec = activated.getLookup().lookup(EditorCookie.class);
-                if (ec != null && ec.getDocument() != null) {
-                    Document doc = ec.getDocument();
-                    Object streamDesc = doc.getProperty(Document.StreamDescriptionProperty);
-                    if (streamDesc instanceof DataObject) {
-                        DataObject dataObject = (DataObject) streamDesc;
-                        FileObject file = dataObject.getPrimaryFile();
-                        Project project = FileOwnerQuery.getOwner(file);
-                        if (project != null) {
-                            return ProjectUtils.getInformation(project).getDisplayName();
-                        }
-                    }
+        FileObject file = getCurrentFileObject();
+        if (file != null) {
+            try {
+                Project project = FileOwnerQuery.getOwner(file);
+                if (project != null) {
+                    return ProjectUtils.getInformation(project).getDisplayName();
                 }
+            } catch (Exception e) {
+                // Silently handle errors in project detection
             }
-        } catch (Exception e) {
-            // Silently handle errors in project detection
         }
         return null;
     }
 
     private String detectFileType() {
-        try {
-            TopComponent activated = TopComponent.getRegistry().getActivated();
-            if (activated != null) {
-                EditorCookie ec = activated.getLookup().lookup(EditorCookie.class);
-                if (ec != null && ec.getDocument() != null) {
-                    Document doc = ec.getDocument();
-                    Object streamDesc = doc.getProperty(Document.StreamDescriptionProperty);
-                    if (streamDesc instanceof DataObject) {
-                        DataObject dataObject = (DataObject) streamDesc;
-                        FileObject file = dataObject.getPrimaryFile();
-                        String mimeType = file.getMIMEType();
-                        
-                        // Map MIME types to readable language names
-                        if (mimeType.contains("java")) return "Java";
-                        if (mimeType.contains("xml")) return "XML";
-                        if (mimeType.contains("html")) return "HTML";
-                        if (mimeType.contains("javascript")) return "JavaScript";
-                        if (mimeType.contains("css")) return "CSS";
-                        if (mimeType.contains("python")) return "Python";
-                        if (mimeType.contains("json")) return "JSON";
-                        if (mimeType.contains("properties")) return "Properties";
-                        
-                        // Fallback to extension
-                        String ext = file.getExt().toUpperCase();
-                        if (!ext.isEmpty()) return ext;
-                    }
-                }
+        FileObject file = getCurrentFileObject();
+        if (file != null) {
+            try {
+                String mimeType = file.getMIMEType();
+                
+                // Map MIME types to readable language names
+                if (mimeType.contains("java")) return "Java";
+                if (mimeType.contains("xml")) return "XML";
+                if (mimeType.contains("html")) return "HTML";
+                if (mimeType.contains("javascript")) return "JavaScript";
+                if (mimeType.contains("css")) return "CSS";
+                if (mimeType.contains("python")) return "Python";
+                if (mimeType.contains("json")) return "JSON";
+                if (mimeType.contains("properties")) return "Properties";
+                
+                // Fallback to extension
+                String ext = file.getExt().toUpperCase();
+                if (!ext.isEmpty()) return ext;
+            } catch (Exception e) {
+                // Silently handle errors in file type detection
             }
-        } catch (Exception e) {
-            // Silently handle errors in file type detection
         }
         return null;
     }
@@ -202,7 +188,7 @@ public class RCPSchedule extends TimerTask {
             builder.setLargeImageText("NetBeans IDE");
             
             if (fileType != null) {
-                builder.setSmallImageKey("java"); // Could be enhanced with file type icons
+                builder.setSmallImageKey("java"); // Note: Ensure assets are configured in Discord Developer Portal
                 builder.setSmallImageText("Programming in " + fileType);
             } else {
                 builder.setSmallImageKey("java");

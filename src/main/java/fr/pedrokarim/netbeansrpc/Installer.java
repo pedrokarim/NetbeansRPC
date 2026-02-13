@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package fr.pedrokarim.netbeansrpc;
 
 import java.util.Date;
@@ -27,13 +22,43 @@ public class Installer extends ModuleInstall implements Runnable {
     public Installer() {
         super();
         
-        timer = new Timer();
-        
-        rcpSchedule = new RCPSchedule();
-        
-        timer.scheduleAtFixedRate(rcpSchedule, new Date(), 12000l); // Updates every 12 seconds
+        // Only start if enabled in settings
+        if (DiscordRPCSettings.isEnabled()) {
+            startRPC();
+        }
         
         System.out.println("[PluginRPC] NetbeansRPC has loaded.");
+    }
+    
+    private static synchronized void startRPC() {
+        if (timer == null) {
+            timer = new Timer();
+            rcpSchedule = new RCPSchedule();
+            timer.scheduleAtFixedRate(rcpSchedule, new Date(), 12000l); // Updates every 12 seconds
+            System.out.println("[PluginRPC] Discord RPC started.");
+        }
+    }
+    
+    public static synchronized void stopRPC() {
+        if (timer != null) {
+            timer.cancel();
+            timer = null;
+        }
+        if (rcpSchedule != null) {
+            rcpSchedule.shutdown();
+            rcpSchedule = null;
+        }
+        System.out.println("[PluginRPC] Discord RPC stopped.");
+    }
+    
+    public static synchronized void restartRPC() {
+        stopRPC();
+        try {
+            Thread.sleep(1000); // Wait a bit before restarting
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        startRPC();
     }
 
     @Override
@@ -43,13 +68,7 @@ public class Installer extends ModuleInstall implements Runnable {
 
     @Override
     public void close() {
-        if (timer != null) {
-            timer.cancel();
-            timer = null;
-        }
-        if (rcpSchedule != null) {
-            rcpSchedule.shutdown();
-        }
+        stopRPC();
         System.out.println("[PluginRPC] NetbeansRPC is closed.");
     }
 }

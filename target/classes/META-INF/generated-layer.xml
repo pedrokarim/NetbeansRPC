@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE filesystem PUBLIC "-//NetBeans//DTD Filesystem 1.2//EN" "http://www.netbeans.org/dtds/filesystem-1_2.dtd">
+<filesystem>
+    <folder name="Windows2">
+        <folder name="Components">
+            <file name="DiscordRPCPanel.settings">
+                <!--fr.pedrokarim.netbeansrpc.DiscordRPCPanel--><![CDATA[<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE settings PUBLIC "-//NetBeans//DTD Session settings 1.0//EN" "http://www.netbeans.org/dtds/sessionsettings-1_0.dtd">
+<settings version="1.0">
+  <instance class="fr.pedrokarim.netbeansrpc.DiscordRPCPanel"/>
+</settings>
+]]></file>
+        </folder>
+        <folder name="Modes">
+            <folder name="output">
+                <file name="DiscordRPCPanel.wstcref">
+                    <!--fr.pedrokarim.netbeansrpc.DiscordRPCPanel--><![CDATA[<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE tc-ref PUBLIC "-//NetBeans//DTD Top Component in Mode Properties 2.0//EN" "http://www.netbeans.org/dtds/tc-ref2_0.dtd">
+<tc-ref version="2.0">
+  <tc-id id="DiscordRPCPanel"/>
+  <state opened="false"/>
+</tc-ref>
+]]></file>
+            </folder>
+        </folder>
+    </folder>
+    <folder name="Actions">
+        <folder name="Window">
+            <file name="fr-pedrokarim-netbeansrpc-DiscordRPCPanel.instance">
+                <!--fr.pedrokarim.netbeansrpc.DiscordRPCPanel-->
+                <attr methodvalue="org.openide.windows.TopComponent.openAction" name="instanceCreate"/>
+                <attr name="component" newvalue="fr.pedrokarim.netbeansrpc.DiscordRPCPanel"/>
+                <attr name="preferredID" stringvalue="DiscordRPCPanel"/>
+                <attr bundlevalue="fr.pedrokarim.netbeansrpc.Bundle#CTL_DiscordRPCPanel" name="displayName"/>
+            </file>
+        </folder>
+    </folder>
+    <folder name="Menu">
+        <folder name="Window">
+            <file name="fr-pedrokarim-netbeansrpc-DiscordRPCPanel.shadow">
+                <!--fr.pedrokarim.netbeansrpc.DiscordRPCPanel-->
+                <attr name="originalFile" stringvalue="Actions/Window/fr-pedrokarim-netbeansrpc-DiscordRPCPanel.instance"/>
+                <attr intvalue="333" name="position"/>
+            </file>
+        </folder>
+    </folder>
+</filesystem>

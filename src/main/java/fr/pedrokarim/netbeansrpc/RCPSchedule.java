@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package fr.pedrokarim.netbeansrpc;
 
 import io.github.kawaxte.presence.DiscordEventHandlers;
@@ -29,9 +24,12 @@ public class RCPSchedule extends TimerTask {
 
     private DiscordRichPresence presence;
     private PropertyChangeListener registryListener;
-    private String applicationId = "621768079386345477";
+    private String currentProject;
+    private String currentFile;
+    private String currentFileType;
     private Thread callbackThread;
     private volatile boolean running = true;
+    private long startTimestamp = 0;
 
     public RCPSchedule() {
         try {
@@ -119,6 +117,13 @@ public class RCPSchedule extends TimerTask {
                 if (mimeType.contains("python")) return "Python";
                 if (mimeType.contains("json")) return "JSON";
                 if (mimeType.contains("properties")) return "Properties";
+                if (mimeType.contains("kotlin")) return "Kotlin";
+                if (mimeType.contains("groovy")) return "Groovy";
+                if (mimeType.contains("php")) return "PHP";
+                if (mimeType.contains("typescript")) return "TypeScript";
+                if (mimeType.contains("markdown")) return "Markdown";
+                if (mimeType.contains("yaml")) return "YAML";
+                if (mimeType.contains("sql")) return "SQL";
                 
                 // Fallback to extension
                 String ext = file.getExt().toUpperCase();
@@ -132,8 +137,23 @@ public class RCPSchedule extends TimerTask {
 
     public void initializeDiscordRPC() {
         try {
+            String applicationId = DiscordRPCSettings.getApplicationId();
+            
             DiscordEventHandlers handlers = new DiscordEventHandlers();
-            handlers.ready = (user) -> System.out.println("Discord RPC Ready!");
+            handlers.ready = (user) -> {
+                System.out.println("Discord RPC Ready! Connected as: " + user.username);
+                updateUIStatus("Connected to Discord as " + user.username);
+            };
+            
+            handlers.disconnected = (errorCode, message) -> {
+                System.err.println("Discord RPC Disconnected: " + message);
+                updateUIStatus("Disconnected from Discord: " + message);
+            };
+            
+            handlers.errored = (errorCode, message) -> {
+                System.err.println("Discord RPC Error: " + message);
+                updateUIStatus("Error: " + message);
+            };
             
             DiscordRPC.initialise(applicationId, handlers, true, "");
             
@@ -148,12 +168,14 @@ public class RCPSchedule extends TimerTask {
                     }
                 }
             }, "RPC-Callback-Handler");
+            callbackThread.setDaemon(true);
             callbackThread.start();
             
-            System.out.println("Discord RPC initialized!");
+            System.out.println("Discord RPC initialized with Application ID: " + applicationId);
             updateRCP(true);
         } catch (Exception e) {
             System.err.println("Failed to initialize Discord RPC: " + e.getMessage());
+            updateUIStatus("Failed to initialize: " + e.getMessage());
             Exceptions.printStackTrace(e);
         }
     }
@@ -163,7 +185,11 @@ public class RCPSchedule extends TimerTask {
             DiscordRichPresence.Builder builder = new DiscordRichPresence.Builder();
             
             if (timestamp != null && timestamp) {
-                builder.setStartTimestamp(System.currentTimeMillis() / 1000);
+                startTimestamp = System.currentTimeMillis() / 1000;
+            }
+            
+            if (DiscordRPCSettings.isShowTimestamp() && startTimestamp > 0) {
+                builder.setStartTimestamp(startTimestamp);
             }
             
             // Detect via NetBeans APIs
@@ -171,14 +197,19 @@ public class RCPSchedule extends TimerTask {
             String projectName = detectCurrentProject();
             String fileType = detectFileType();
             
-            // Set presence details
-            if (projectName != null) {
+            // Store for UI updates
+            currentProject = projectName;
+            currentFile = fileName;
+            currentFileType = fileType;
+            
+            // Set presence details based on settings
+            if (DiscordRPCSettings.isShowProject() && projectName != null) {
                 builder.setDetails("📁 " + projectName);
             } else {
                 builder.setDetails("Working in NetBeans IDE");
             }
             
-            if (fileName != null) {
+            if (DiscordRPCSettings.isShowFile() && fileName != null) {
                 builder.setState("📝 Editing " + fileName);
             } else {
                 builder.setState("Idle");
@@ -197,10 +228,35 @@ public class RCPSchedule extends TimerTask {
             
             presence = builder.build();
             
-            // CRUCIAL: Send to Discord!
+            // Send to Discord!
             DiscordRPC.updatePresence(presence);
+            
+            // Update UI panel if open
+            updateUIPresence();
         } catch (Exception e) {
             System.err.println("Failed to update Discord presence: " + e.getMessage());
+        }
+    }
+    
+    private void updateUIStatus(String message) {
+        try {
+            DiscordRPCPanel panel = DiscordRPCPanel.getInstance();
+            if (panel != null) {
+                panel.updateStatus(message);
+            }
+        } catch (Exception e) {
+            // Ignore if UI is not available
+        }
+    }
+    
+    private void updateUIPresence() {
+        try {
+            DiscordRPCPanel panel = DiscordRPCPanel.getInstance();
+            if (panel != null) {
+                panel.updatePresenceInfo(currentProject, currentFile, currentFileType);
+            }
+        } catch (Exception e) {
+            // Ignore if UI is not available
         }
     }
 
@@ -214,6 +270,7 @@ public class RCPSchedule extends TimerTask {
         }
         try {
             DiscordRPC.shutdown();
+            updateUIStatus("Discord RPC shutdown complete");
         } catch (Exception e) {
             System.err.println("Error during Discord RPC shutdown: " + e.getMessage());
         }

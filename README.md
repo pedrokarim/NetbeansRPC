@@ -2,7 +2,7 @@
 
 A NetBeans IDE plugin that integrates Discord Rich Presence to share your coding activity with your Discord friends in real-time.
 
-![Version](https://img.shields.io/badge/version-2.0-blue.svg)
+![Release](https://img.shields.io/github/v/release/pedrokarim/NetbeansRPC?display_name=tag)
 ![License](https://img.shields.io/badge/license-GPL--3.0-green.svg)
 ![NetBeans](https://img.shields.io/badge/NetBeans-23.0+-orange.svg)
 ![Java](https://img.shields.io/badge/Java-17+-red.svg)
@@ -16,6 +16,17 @@ NetbeansRPC is a NetBeans Platform module that uses Discord's IPC protocol to di
 - Programming language/file type
 - Time spent coding
 - Configuration panel for customizing your presence
+
+## Preview
+
+<p align="center">
+  <img src="assets/visuel-rich-presence.png" alt="NetbeansRPC Rich Presence preview" />
+</p>
+
+<p align="center">
+  <img src="assets/netbeans64_79Am3DSdFO.png" alt="NetbeansRPC preview in NetBeans IDE" width="49%" />
+  <img src="assets/netbeans64_XfZoDqB3IW.png" alt="NetbeansRPC configuration preview" width="49%" />
+</p>
 
 ## Features
 
@@ -52,7 +63,7 @@ NetbeansRPC is a NetBeans Platform module that uses Discord's IPC protocol to di
 
 2. In NetBeans, go to `Tools` > `Plugins` > `Downloaded`
 3. Click `Add Plugins...`
-4. Navigate to `target/` and select `NetbeansRPC-2.0.nbm`
+4. Navigate to `target/nbm/` and select the generated `NetbeansRPC-<version>.nbm` file
 5. Click `Install` and follow the wizard
 6. Restart NetBeans IDE
 
@@ -83,6 +94,22 @@ mvn clean
 ```
 
 The compiled NBM file will be available in the `target/nbm/` directory.
+
+## Releases
+
+Releases are published automatically by GitHub Actions when a tag starting with `v` is pushed.
+
+```bash
+git tag v2.1.0
+git push origin HEAD --follow-tags
+```
+
+When the tag is received by GitHub, the workflow:
+
+- derives the Maven version from the tag (`v2.1.0` -> `2.1.0`)
+- builds the NetBeans module package (`.nbm`)
+- creates a GitHub Release
+- uploads the `.nbm` file and its SHA-256 checksum
 
 ## Configuration
 

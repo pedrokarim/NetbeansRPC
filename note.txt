@@ -1,2 +1,0 @@
-https://www.programcreek.com/java-api-examples/?api=org.openide.util.actions.SystemAction
-https://platform.netbeans.org/tutorials/nbm-nodesapi.html
